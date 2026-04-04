@@ -4,8 +4,10 @@
 
 Each card is a React component in `src/cards/CardNN.tsx`. Three layout patterns are available in `CardTemplate.tsx`:
 
-1. **FullBleed** — Background image + text overlay at bottom
-2. **Split** — Left text (48%) + right image (52%)
+**IMPORTANT**: Canvas is portrait 1080x1350 (4:5). All layouts must be **vertical**. NEVER use horizontal (side-by-side) splits — columns are too narrow on portrait canvas and will look broken.
+
+1. **FullBleed** — Full background image + text overlay at bottom
+2. **Split** — Image top (55%) + text bottom (45%), vertical layout
 3. **TextOnly** — Centered text on solid background
 
 ## How to Write a Card Component
@@ -79,7 +81,7 @@ Always include at bottom center:
 </div>
 ```
 
-For Split layout: place page number in text area, NOT over image.
+For Split layout: place page number in text area (bottom half), NOT over image.
 
 ## Style Rules
 
