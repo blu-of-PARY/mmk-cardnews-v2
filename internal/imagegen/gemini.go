@@ -116,7 +116,7 @@ func (c *Client) buildRequest(opts GenerateOpts) map[string]any {
 		"contents": []map[string]any{
 			{
 				"parts": []map[string]any{
-					{"text": opts.Prompt},
+					{"text": "CRITICAL: Generate an image with absolutely NO text, NO letters, NO words, NO numbers, NO watermarks, NO logos, NO typography, NO captions, NO labels anywhere in the image. The image must be purely visual with zero text elements.\n\n" + opts.Prompt},
 				},
 			},
 		},
