@@ -118,6 +118,12 @@ jobs:
 
             When done, all generated files must exist at the output path. Do not commit anything.
 
+      - name: Install CJK fonts
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y fonts-noto-cjk fonts-noto-cjk-extra
+          fc-cache -f
+
       - name: Render card news stills
         run: |
           OUTPUT="${{ steps.branch.outputs.output }}"
@@ -125,6 +131,13 @@ jobs:
           if [[ ! -d "$OUTPUT" ]]; then
             echo "Skipping render: output directory not found"
             exit 0
+          fi
+
+          # Patch CardStill.tsx to load all required Google Fonts
+          CARDSTILL="$OUTPUT/src/CardStill.tsx"
+          if [[ -f "$CARDSTILL" ]]; then
+            sed -i "s|family=Noto+Sans+KR:wght@100\.\.900|family=Noto+Sans+KR:wght@100..900\&family=Noto+Serif+KR:wght@400;700;900\&family=Barlow+Condensed:wght@700;900\&family=DM+Sans:wght@400;700\&family=Cormorant+Garamond:ital,wght@0,500;1,500|" "$CARDSTILL"
+            echo "Patched CardStill.tsx with all Google Font imports"
           fi
 
           echo "=== Installing Remotion dependencies ==="

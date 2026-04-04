@@ -19,7 +19,7 @@ export const CardStill: React.FC<CardStillProps> = ({ cardIndex }) => {
 
   return (
     <>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100..900&display=swap');`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100..900&family=Noto+Serif+KR:wght@400;700;900&family=Barlow+Condensed:wght@700;900&family=DM+Sans:wght@400;700&family=Cormorant+Garamond:ital,wght@0,500;1,500&display=swap');`}</style>
       <CardComponent durationInFrames={999} />
     </>
   );
