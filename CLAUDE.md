@@ -77,5 +77,15 @@ Topic → mmk-cn new (scaffold) → Claude writes Card TSX → mmk-cn imagegen
 
 - Remotion React components for all visual rendering
 - Go CLI handles orchestration, scaffolding, and image generation
-- No Python dependencies — pure Go + Node.js
+- No Python dependencies -- pure Go + Node.js
 - Plugin-first: installable via `claude plugin add`
+- All card layouts MUST be vertical (never horizontal split on portrait 1080x1350)
+- Gemini image prompts always prepend "NO text" directive
+- Film brand names (Kodak, Fujifilm) must NOT appear in image prompts (Gemini renders them as text)
+
+## Documentation
+
+- [Architecture & Workflow Diagrams](docs/architecture.md)
+- [Card Template Guide](skills/cardnews/references/card-template-guide.md)
+- [Art Direction Guide](skills/cardnews/references/art-direction.md)
+- [Magazine Styles](skills/cardnews/references/magazine-styles.md)
