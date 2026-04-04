@@ -159,6 +159,7 @@ This is the core creative step. Read `{SKILL_DIR}/references/card-template-guide
 
 For each card, write `src/cards/CardNN.tsx`:
 - Use `FullBleedCard`, `SplitCard`, or `TextOnlyCard` pattern from `CardTemplate.tsx`
+- **Canvas is portrait 1080x1350 (4:5)** — all layouts MUST be vertical. NEVER use horizontal (side-by-side) splits. Split = image top + text bottom.
 - **Import magazine style constants** from `../magazine-styles` (e.g., `import { POPEYE } from '../magazine-styles'`)
 - Apply style's palette, typography, and overlay gradients
 - Fill in actual content from plan.md

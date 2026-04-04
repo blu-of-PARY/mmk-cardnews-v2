@@ -1,9 +1,12 @@
 // Card component templates — 3 layout patterns
 // Copy the pattern that fits your card and fill in the content.
 //
+// IMPORTANT: Canvas is portrait 1080x1350 (4:5). All layouts must be vertical.
+// Do NOT use horizontal (side-by-side) splits — columns are too narrow on portrait.
+//
 // Patterns:
 //   FullBleed  — Full background image + text overlay at bottom
-//   Split      — Left text (48%) + right image (52%)
+//   Split      — Image top (55%) + text bottom (45%), vertical layout
 //   TextOnly   — Centered text on solid background
 //
 // Mobile readability font sizes (1080px canvas → ~375px mobile, ~1/2.88 scale):
@@ -55,16 +58,20 @@ export const FullBleedCard: React.FC<CardProps> = ({ durationInFrames }) => {
   );
 };
 
-// Pattern B: Split (left text + right image)
+// Pattern B: Split (image top + text bottom — vertical layout for portrait canvas)
 export const SplitCard: React.FC<CardProps> = ({ durationInFrames }) => {
   const frame = useCurrentFrame();
+  const imgOpacity = interpolate(frame, [0, FADE_IN], [0, 1], { extrapolateRight: "clamp" });
   const titleOpacity = interpolate(frame, [TITLE_IN, TITLE_IN + 12], [0, 1], { extrapolateRight: "clamp" });
   const bodyOpacity = interpolate(frame, [BODY_IN, BODY_IN + 12], [0, 1], { extrapolateRight: "clamp" });
   const fadeOut = interpolate(frame, [durationInFrames - FADE_OUT, durationInFrames], [1, 0], { extrapolateLeft: "clamp" });
 
   return (
-    <AbsoluteFill style={{ display: "flex", opacity: fadeOut }}>
-      <div style={{ width: "48%", height: "100%", padding: "80px 48px 90px 72px", display: "flex", flexDirection: "column", justifyContent: "center", background: "#FAFAFA", position: "relative" }}>
+    <AbsoluteFill style={{ display: "flex", flexDirection: "column", opacity: fadeOut }}>
+      <div style={{ width: "100%", height: "55%", overflow: "hidden" }}>
+        <Img src={staticFile("card-XX.png")} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: imgOpacity }} />
+      </div>
+      <div style={{ width: "100%", height: "45%", padding: "48px 72px 90px 72px", display: "flex", flexDirection: "column", justifyContent: "center", background: "#FAFAFA", position: "relative" }}>
         <div style={{ fontSize: 32, fontWeight: 500, letterSpacing: 3, color: "rgba(0,0,0,0.4)", marginBottom: 20, opacity: bodyOpacity }}>DATE</div>
         <h2 style={{ fontFamily: "'Noto Serif KR', serif", fontSize: 48, fontWeight: 900, lineHeight: 1.25, color: "#0A0A0A", opacity: titleOpacity }}>
           TITLE
@@ -75,9 +82,6 @@ export const SplitCard: React.FC<CardProps> = ({ durationInFrames }) => {
         <div style={{ position: "absolute", bottom: 40, left: "50%", transform: "translateX(-50%)", fontSize: 28, fontWeight: 300, letterSpacing: 3, color: "rgba(0,0,0,0.3)" }}>
           N / TOTAL
         </div>
-      </div>
-      <div style={{ width: "52%", height: "100%", overflow: "hidden" }}>
-        <Img src={staticFile("card-XX.png")} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
       </div>
     </AbsoluteFill>
   );

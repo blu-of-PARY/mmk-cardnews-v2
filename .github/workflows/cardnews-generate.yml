@@ -146,8 +146,17 @@ jobs:
           echo "=== Rendering card stills (Remotion → PNG) ==="
           "$GITHUB_WORKSPACE/dist/mmk-cn" still .
 
-          echo "=== Rendered stills ==="
-          ls -la out/stills/ 2>/dev/null || echo "No stills found"
+          echo "=== Verifying rendered stills ==="
+          for f in out/stills/card-*.png; do
+            if [[ -f "$f" ]]; then
+              SIZE=$(file "$f" | grep -oP '\d+ x \d+' || echo "unknown")
+              BYTES=$(stat -c%s "$f" 2>/dev/null || stat -f%z "$f" 2>/dev/null)
+              echo "  $f — ${SIZE} — ${BYTES} bytes"
+              if [[ "$BYTES" -lt 10000 ]]; then
+                echo "  WARNING: $f is suspiciously small (<10KB), may be blank"
+              fi
+            fi
+          done
 
           cd "$GITHUB_WORKSPACE"
 
