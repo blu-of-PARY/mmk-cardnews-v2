@@ -1,0 +1,182 @@
+name: Generate Card News
+
+on:
+  workflow_dispatch:
+    inputs:
+      topic:
+        description: "Card news topic (e.g. '도쿄 벚꽃 명소 TOP 7')"
+        required: true
+        type: string
+      slides:
+        description: "Number of slides (7-13)"
+        required: false
+        default: "7"
+        type: string
+      style:
+        description: "Magazine style (auto = Claude chooses)"
+        required: false
+        default: "auto"
+        type: choice
+        options:
+          - auto
+          - BRUTUS
+          - POPEYE
+          - Casa BRUTUS
+          - OLIVE
+          - SWITCH
+          - Pen
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Build mmk-cn CLI
+        run: make build
+
+      - name: Prepare branch
+        id: branch
+        run: |
+          # Slugify: strip non-ASCII (Korean etc.) and normalize dashes
+          SLUG=$(echo "${{ github.event.inputs.topic }}" \
+            | tr '[:upper:]' '[:lower:]' \
+            | sed 's/[^a-z0-9]/-/g' \
+            | sed 's/-\+/-/g' \
+            | sed 's/^-//;s/-$//' \
+            | cut -c1-30)
+          # Fallback: if slug is too short (e.g. Korean-only topic), use "cardnews"
+          [[ ${#SLUG} -lt 3 ]] && SLUG="cardnews"
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          BRANCH="cardnews/${SLUG}-${TIMESTAMP}"
+          OUTPUT="output/${SLUG}-${TIMESTAMP}"
+
+          git checkout -b "$BRANCH"
+          echo "$PWD/dist" >> $GITHUB_PATH
+
+          echo "branch=$BRANCH"   >> $GITHUB_OUTPUT
+          echo "slug=$SLUG"       >> $GITHUB_OUTPUT
+          echo "output=$OUTPUT"   >> $GITHUB_OUTPUT
+
+      - name: Generate card news with Claude Code
+        uses: anthropics/claude-code-action@v1
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          display_report: true
+          allowed_tools: "Bash,Write,Edit,Read,Glob,Grep,WebSearch"
+          prompt: |
+            You are running an automated card news generation pipeline in GitHub Actions CI.
+            Follow the workflow defined in skills/cardnews/SKILL.md (Steps 0 through 5 only).
+
+            ## Inputs
+            - Topic:   ${{ github.event.inputs.topic }}
+            - Slides:  ${{ github.event.inputs.slides }}
+            - Style:   ${{ github.event.inputs.style }} (if "auto", choose the best fit from magazine-styles.md)
+            - Output:  ${{ steps.branch.outputs.output }}
+
+            ## mmk-cn binary
+            Use `./dist/mmk-cn` (already built). It is also on PATH as `mmk-cn`.
+
+            ## CI constraints — MUST follow exactly
+            - Skip all AskUserQuestion checkpoints; proceed automatically
+            - Do NOT run `npm install` (no display available, Remotion rendering is skipped in CI)
+            - Do NOT run `mmk-cn preview`, `mmk-cn still`, or `mmk-cn render`
+            - Do NOT create any git commits or branches
+            - Output path must be exactly: ${{ steps.branch.outputs.output }}
+            - GEMINI_API_KEY is already set as an environment variable — do NOT use `--env-file`
+            - Always run image generation (Step 4); GEMINI_API_KEY is guaranteed to be set
+
+            ## Steps to complete
+            1. (Step 0) Verify `./dist/mmk-cn --version` works
+            2. (Step 1) Research the topic using WebSearch; write `${{ steps.branch.outputs.output }}/research.md`
+            3. (Step 2) Create plan with card layout + magazine style; write `${{ steps.branch.outputs.output }}/plan.md`
+            4. (Step 3) Scaffold: `./dist/mmk-cn new "${{ github.event.inputs.topic }}" --slides ${{ github.event.inputs.slides }} --output "${{ steps.branch.outputs.output }}"`
+            5. (Step 4) Create `${{ steps.branch.outputs.output }}/batch.json` from plan image descriptions, then run:
+               `./dist/mmk-cn imagegen --batch "${{ steps.branch.outputs.output }}/batch.json" --aspect-ratio 3:4 --image-size 2K`
+            6. (Step 5) Write all card TSX components in `${{ steps.branch.outputs.output }}/src/cards/`
+
+            When done, all generated files must exist at the output path. Do not commit anything.
+
+      - name: Commit and create PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TOPIC="${{ github.event.inputs.topic }}"
+          SLIDES="${{ github.event.inputs.slides }}"
+          STYLE="${{ github.event.inputs.style }}"
+          BRANCH="${{ steps.branch.outputs.branch }}"
+          OUTPUT="${{ steps.branch.outputs.output }}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Verify Claude generated files before committing
+          if [[ ! -d "$OUTPUT" ]]; then
+            echo "ERROR: Output directory not found: $OUTPUT"
+            echo "Claude did not generate files. Check the Claude Code step logs above."
+            exit 1
+          fi
+
+          # Force-add output directory (bypasses .gitignore which excludes output/)
+          git add -f "$OUTPUT"
+
+          # Safety: never commit node_modules if somehow created
+          git reset HEAD "$OUTPUT/node_modules" 2>/dev/null || true
+
+          # Count generated artifacts for the PR body
+          IMAGE_COUNT=$(ls "$OUTPUT/public/card-"*.png 2>/dev/null | wc -l | tr -d ' ')
+          CARD_COUNT=$(ls "$OUTPUT/src/cards/Card"[0-9]*.tsx 2>/dev/null | wc -l | tr -d ' ')
+
+          git commit -m "feat: card news — ${TOPIC}" \
+            -m "Slides: ${SLIDES} | Style: ${STYLE} | Images: ${IMAGE_COUNT} | Cards: ${CARD_COUNT}"
+
+          git push origin "$BRANCH"
+
+          gh pr create \
+            --title "Card News: ${TOPIC}" \
+            --body "$(cat <<EOF
+          ## Card News: ${TOPIC}
+
+          **Slides**: ${SLIDES} | **Style**: ${STYLE}
+          **Images generated**: ${IMAGE_COUNT} | **Card components**: ${CARD_COUNT}
+
+          ### Generated files
+          - \`${OUTPUT}/research.md\` — Research notes
+          - \`${OUTPUT}/plan.md\` — Card news plan
+          - \`${OUTPUT}/src/cards/\` — React card components
+          - \`${OUTPUT}/public/\` — Gemini-generated images
+
+          ### Preview locally
+          \`\`\`bash
+          cd ${OUTPUT} && npm install
+          mmk-cn preview ${OUTPUT}   # Remotion Studio at localhost:3000
+          # or export:
+          mmk-cn still ${OUTPUT}     # PNG stills → out/stills/
+          mmk-cn render ${OUTPUT}    # MP4 video  → out/output.mp4
+          mmk-cn pdf ${OUTPUT}/out/stills  # PDF carousel
+          \`\`\`
+          EOF
+          )" \
+            --base main \
+            --head "$BRANCH"
