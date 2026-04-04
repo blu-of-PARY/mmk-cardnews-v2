@@ -57,15 +57,18 @@ jobs:
       - name: Prepare branch
         id: branch
         run: |
+          # Slugify: strip non-ASCII (Korean etc.) and normalize dashes
           SLUG=$(echo "${{ github.event.inputs.topic }}" \
             | tr '[:upper:]' '[:lower:]' \
             | sed 's/[^a-z0-9]/-/g' \
             | sed 's/-\+/-/g' \
             | sed 's/^-//;s/-$//' \
-            | cut -c1-40)
+            | cut -c1-30)
+          # Fallback: if slug is too short (e.g. Korean-only topic), use "cardnews"
+          [[ ${#SLUG} -lt 3 ]] && SLUG="cardnews"
           TIMESTAMP=$(date +%Y%m%d%H%M%S)
           BRANCH="cardnews/${SLUG}-${TIMESTAMP}"
-          OUTPUT="output/${SLUG}"
+          OUTPUT="output/${SLUG}-${TIMESTAMP}"
 
           git checkout -b "$BRANCH"
           echo "$PWD/dist" >> $GITHUB_PATH
@@ -80,6 +83,8 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          display_report: true
+          allowed_tools: "Bash,Write,Edit,Read,Glob,Grep,WebSearch"
           prompt: |
             You are running an automated card news generation pipeline in GitHub Actions CI.
             Follow the workflow defined in skills/cardnews/SKILL.md (Steps 0 through 5 only).
@@ -125,6 +130,13 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Verify Claude generated files before committing
+          if [[ ! -d "$OUTPUT" ]]; then
+            echo "ERROR: Output directory not found: $OUTPUT"
+            echo "Claude did not generate files. Check the Claude Code step logs above."
+            exit 1
+          fi
 
           # Force-add output directory (bypasses .gitignore which excludes output/)
           git add -f "$OUTPUT"
