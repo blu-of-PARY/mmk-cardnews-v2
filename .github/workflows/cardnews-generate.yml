@@ -130,6 +130,7 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config url."https://x-access-token:${{ github.token }}@github.com/".insteadOf "https://github.com/"
 
           # Verify Claude generated files before committing
           if [[ ! -d "$OUTPUT" ]]; then
