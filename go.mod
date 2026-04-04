@@ -1,6 +1,6 @@
 module github.com/pureugong/mmk-cardnews-v2
 
-go 1.26.1
+go 1.24.7
 
 require (
 	github.com/go-pdf/fpdf v0.9.0

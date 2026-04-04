@@ -14,7 +14,7 @@ A Go CLI + Remotion-based card news generator. Claude Code plugin that anyone ca
 
 ## Tech Stack
 
-- **Language**: Go 1.23 (CLI orchestrator)
+- **Language**: Go 1.24 (CLI orchestrator)
 - **CLI**: Cobra (spf13/cobra)
 - **Rendering**: Remotion 4.x (React → PNG/MP4)
 - **Image Gen**: Gemini API via net/http (model: gemini-3.1-flash-image-preview)
