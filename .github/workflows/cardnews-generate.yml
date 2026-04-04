@@ -84,7 +84,7 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           display_report: true
-          allowed_tools: "Bash,Write,Edit,Read,Glob,Grep,WebSearch"
+          claude_args: "--allowedTools Bash,Write,Edit,Read,Glob,Grep,WebSearch"
           prompt: |
             You are running an automated card news generation pipeline in GitHub Actions CI.
             Follow the workflow defined in skills/cardnews/SKILL.md (Steps 0 through 5 only).
