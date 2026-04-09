@@ -1,0 +1,22 @@
+{
+  "name": "mmk-cardnews",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "npx remotion studio",
+    "render": "npx remotion render src/index.ts CardNewsVideoClean --output out/output.mp4",
+    "render:subs": "npx remotion render src/index.ts CardNewsVideo --output out/output-subs.mp4",
+    "render:vertical": "npx remotion render src/index.ts CardNewsVerticalVideoClean --output out/output-9x16.mp4",
+    "still": "echo 'Use: mmk-cn still .'"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.261",
+    "remotion": "4.0.261",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "typescript": "^5.7.0"
+  }
+}
